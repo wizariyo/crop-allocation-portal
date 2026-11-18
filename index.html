@@ -1,0 +1,990 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AgriAlloc — Crop & Resource Allocation Portal</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Font Awesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Google Fonts: Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+          },
+          colors: {
+            agri: {
+              50: '#f0fdf4',
+              100: '#dcfce7',
+              200: '#bbf7d0',
+              500: '#22c55e',
+              600: '#16a34a',
+              700: '#15803d',
+              800: '#166534',
+              900: '#14532d',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #f8fafc; }
+    .glass-card { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); }
+  </style>
+</head>
+<body class="min-h-screen text-slate-800 antialiased flex flex-col justify-between">
+
+  <!-- ================= TOP NAV BAR (Hidden on Auth Screen) ================= -->
+  <header id="topNavBar" class="hidden bg-white border-b border-slate-200 sticky top-0 z-40 shadow-sm">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      <div class="flex items-center space-x-3">
+        <div class="w-10 h-10 rounded-xl bg-agri-600 flex items-center justify-center text-white shadow-md shadow-agri-600/30 text-lg">
+          <i class="fa-solid fa-wheat-awn"></i>
+        </div>
+        <div>
+          <h1 class="font-bold text-lg text-slate-900 leading-tight">AgriAlloc</h1>
+          <p class="text-xs text-slate-500 font-medium">Department of Agriculture & Farmer Welfare</p>
+        </div>
+      </div>
+
+      <div class="flex items-center space-x-4">
+        <div id="userBadge" class="hidden sm:flex items-center space-x-2 bg-slate-100 py-1.5 px-3 rounded-full text-xs font-semibold text-slate-700">
+          <i class="fa-solid fa-user-circle text-agri-600 text-sm"></i>
+          <span id="navUserName">Farmer</span>
+        </div>
+        <button onclick="handleLogout()" class="inline-flex items-center space-x-1.5 text-xs font-semibold text-rose-600 hover:text-rose-700 bg-rose-50 hover:bg-rose-100 py-2 px-3.5 rounded-lg transition">
+          <i class="fa-solid fa-arrow-right-from-bracket"></i>
+          <span>Log Out</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- ================= MAIN CONTAINER ================= -->
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full flex-grow">
+
+    <!-- 1. AUTH SCREEN (Gatekeeper - Only this is shown first) -->
+    <div id="authScreen" class="max-w-md mx-auto my-8">
+      <div class="text-center mb-8">
+        <div class="inline-flex w-16 h-16 rounded-2xl bg-gradient-to-tr from-agri-700 to-agri-500 items-center justify-center text-white text-2xl shadow-xl shadow-agri-600/20 mb-3">
+          <i class="fa-solid fa-seedling"></i>
+        </div>
+        <h2 class="text-2xl font-extrabold text-slate-900 tracking-tight">AgriAlloc Portal</h2>
+        <p class="text-sm text-slate-500 mt-1">Smart Crop Matching & Priority Resource Allocation</p>
+      </div>
+
+      <div class="bg-white rounded-2xl border border-slate-200/80 shadow-xl shadow-slate-200/50 p-6 sm:p-8">
+        <!-- Auth Tabs -->
+        <div class="grid grid-cols-3 gap-1 bg-slate-100 p-1 rounded-xl mb-6 text-xs font-semibold">
+          <button id="tabBtnFarmerLogin" onclick="switchAuthTab('farmer-login')" class="py-2 rounded-lg text-slate-900 bg-white shadow-sm transition">Farmer Login</button>
+          <button id="tabBtnFarmerReg" onclick="switchAuthTab('farmer-reg')" class="py-2 rounded-lg text-slate-500 hover:text-slate-900 transition">Register</button>
+          <button id="tabBtnOfficer" onclick="switchAuthTab('officer-login')" class="py-2 rounded-lg text-slate-500 hover:text-slate-900 transition">Officer Desk</button>
+        </div>
+
+        <!-- FORM A: Farmer Login -->
+        <form id="formFarmerLogin" onsubmit="event.preventDefault(); submitFarmerLogin();" class="space-y-4">
+          <div>
+            <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Farmer ID</label>
+            <div class="relative">
+              <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400 text-sm">
+                <i class="fa-solid fa-id-badge"></i>
+              </span>
+              <input type="number" id="loginFarmerId" placeholder="e.g. 1001" required
+                class="w-full pl-9 pr-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-agri-500 focus:bg-white outline-none transition">
+            </div>
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">10-Digit Mobile Number</label>
+            <div class="relative">
+              <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400 text-sm">
+                <i class="fa-solid fa-phone"></i>
+              </span>
+              <input type="tel" id="loginContact" maxlength="10" placeholder="e.g. 9876543210" required
+                class="w-full pl-9 pr-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-agri-500 focus:bg-white outline-none transition">
+            </div>
+          </div>
+          <button type="submit" class="w-full py-3 bg-agri-600 hover:bg-agri-700 text-white rounded-xl font-bold text-sm shadow-md shadow-agri-600/30 transition">
+            Sign In to Farmer Portal
+          </button>
+          <p class="text-center text-xs text-slate-400 mt-2">New farmer? Click 'Register' above to get your ID.</p>
+        </form>
+
+        <!-- FORM B: Farmer Registration -->
+        <form id="formFarmerReg" onsubmit="event.preventDefault(); submitFarmerRegister();" class="hidden space-y-4">
+          <div>
+            <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Full Name</label>
+            <input type="text" id="regName" placeholder="e.g. Ramesh Kumar" required
+              class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-agri-500 focus:bg-white outline-none transition">
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">10-Digit Contact Number</label>
+            <input type="tel" id="regContact" maxlength="10" placeholder="e.g. 9876543210" required
+              class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-agri-500 focus:bg-white outline-none transition">
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Village / Tehsil</label>
+            <input type="text" id="regVillage" placeholder="e.g. Rampur, Ludhiana" required
+              class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-agri-500 focus:bg-white outline-none transition">
+          </div>
+          <button type="submit" class="w-full py-3 bg-agri-600 hover:bg-agri-700 text-white rounded-xl font-bold text-sm shadow-md shadow-agri-600/30 transition">
+            Register & Get Farmer ID
+          </button>
+        </form>
+
+        <!-- FORM C: Officer Login -->
+        <form id="formOfficerLogin" onsubmit="event.preventDefault(); submitOfficerLogin();" class="hidden space-y-4">
+          <div class="bg-amber-50 border border-amber-200 rounded-xl p-3 text-xs text-amber-800">
+            <i class="fa-solid fa-shield-halved mr-1"></i> Authorized agricultural nodal officers only.
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Officer Security Passcode</label>
+            <input type="password" id="officerPass" placeholder="Enter passcode (Hint: admin)" required
+              class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-agri-500 focus:bg-white outline-none transition">
+          </div>
+          <button type="submit" class="w-full py-3 bg-slate-900 hover:bg-slate-800 text-white rounded-xl font-bold text-sm shadow-md transition">
+            Enter Officer Allocation Desk
+          </button>
+        </form>
+
+        <div id="authAlert" class="hidden mt-4 p-3 rounded-xl text-xs font-semibold"></div>
+
+        <!-- Quick 1-Click Demo Buttons -->
+        <div class="mt-6 pt-5 border-t border-slate-100">
+          <div class="flex items-center justify-between text-xs text-slate-400 mb-2">
+            <span>Instant 1-Click Demo Test:</span>
+            <button onclick="resetAllDemoData()" class="text-rose-500 hover:underline">Reset Data</button>
+          </div>
+          <div class="grid grid-cols-2 gap-2">
+            <button onclick="quickLoginFarmer(1001, '9876543210')" class="text-left p-2.5 bg-slate-50 hover:bg-agri-50 border border-slate-200 hover:border-agri-300 rounded-xl transition text-xs">
+              <span class="font-bold text-slate-800 block">Ramesh Kumar</span>
+              <span class="text-slate-400">ID: #1001</span>
+            </button>
+            <button onclick="quickLoginOfficer()" class="text-left p-2.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl transition text-xs">
+              <span class="font-bold text-slate-800 block">Officer Desk</span>
+              <span class="text-slate-400">Admin Pass</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 2. FARMER PORTAL (Opened ONLY after Farmer Login) -->
+    <div id="farmerPortal" class="hidden space-y-6">
+      <!-- Farmer Profile Banner -->
+      <div class="bg-gradient-to-r from-agri-800 via-agri-700 to-agri-600 rounded-2xl p-6 text-white shadow-xl shadow-agri-900/10 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <div class="inline-flex items-center space-x-2 bg-white/10 px-3 py-1 rounded-full text-xs font-medium text-agri-100 mb-2">
+            <i class="fa-solid fa-id-card"></i>
+            <span>Farmer ID: <strong id="bannerFarmerId" class="text-white">#1001</strong></span>
+          </div>
+          <h2 class="text-2xl font-extrabold tracking-tight">Namaste, <span id="bannerFarmerName">Farmer</span>!</h2>
+          <p class="text-agri-100 text-sm mt-1">Village: <span id="bannerVillage">Village</span> • Mobile: <span id="bannerContact">Phone</span></p>
+        </div>
+        <div class="flex items-center gap-2">
+          <div class="bg-white/10 backdrop-blur rounded-xl px-4 py-2.5 text-center">
+            <span class="block text-xs text-agri-200 font-medium">Active Requests</span>
+            <span id="bannerOpenReqCount" class="text-xl font-bold">0</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Farmer Portal Navigation Tabs -->
+      <div class="flex border-b border-slate-200 space-x-2 sm:space-x-4 text-sm font-semibold">
+        <button id="fTabBtn1" onclick="switchFarmerTab(1)" class="pb-3 border-b-2 border-agri-600 text-agri-700 flex items-center space-x-2">
+          <i class="fa-solid fa-wheat-awn"></i>
+          <span>1. Crop Recommendation</span>
+        </button>
+        <button id="fTabBtn2" onclick="switchFarmerTab(2)" class="pb-3 border-b-2 border-transparent text-slate-500 hover:text-slate-800 flex items-center space-x-2">
+          <i class="fa-solid fa-hand-holding-hand"></i>
+          <span>2. Request Resources</span>
+        </button>
+        <button id="fTabBtn3" onclick="switchFarmerTab(3)" class="pb-3 border-b-2 border-transparent text-slate-500 hover:text-slate-800 flex items-center space-x-2">
+          <i class="fa-solid fa-clock-rotate-left"></i>
+          <span>3. My Requests & Status</span>
+        </button>
+      </div>
+
+      <!-- Tab 1: Crop Recommendation Engine -->
+      <div id="farmerTabContent1" class="space-y-6">
+        <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
+          <h3 class="text-lg font-bold text-slate-900 mb-1">Scientific Crop Recommendation</h3>
+          <p class="text-xs text-slate-500 mb-6">Select your land's soil type and season to get the best-suited crop according to agricultural guidelines.</p>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">Soil Type</label>
+              <select id="recSoil" onchange="updateCropRecommendation()" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-800 focus:ring-2 focus:ring-agri-500 outline-none">
+                <option value="Alluvial">Alluvial Soil</option>
+                <option value="Black">Black Soil (Regur)</option>
+                <option value="Red">Red Soil</option>
+                <option value="Sandy">Sandy Soil</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">Farming Season</label>
+              <select id="recSeason" onchange="updateCropRecommendation()" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-800 focus:ring-2 focus:ring-agri-500 outline-none">
+                <option value="Kharif">Kharif (Monsoon: July - October)</option>
+                <option value="Rabi">Rabi (Winter: October - April)</option>
+                <option value="Zaid">Zaid (Summer: March - June)</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Recommendation Result Card -->
+          <div class="mt-6 p-6 rounded-2xl bg-gradient-to-r from-agri-50 to-emerald-50 border border-agri-200 flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div class="flex items-start space-x-4">
+              <div id="recCropIcon" class="text-4xl">🌾</div>
+              <div>
+                <span class="text-xs font-bold text-agri-700 uppercase tracking-wider">Recommended Crop</span>
+                <h4 id="recCropName" class="text-2xl font-extrabold text-agri-900 mt-0.5">Rice</h4>
+                <p id="recCropAdvice" class="text-sm text-agri-800 mt-1">High water requirement. Ideal for clayey alluvial soil.</p>
+              </div>
+            </div>
+            <button onclick="selectRecommendedCropForRequest()" class="px-5 py-3 bg-agri-600 hover:bg-agri-700 text-white rounded-xl text-xs font-bold shadow-md shadow-agri-600/30 whitespace-nowrap transition">
+              Apply for Resources for this Crop &rarr;
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab 2: Resource Request Form -->
+      <div id="farmerTabContent2" class="hidden space-y-6">
+        <div id="activeRequestNotice" class="hidden p-5 bg-amber-50 border border-amber-200 rounded-2xl">
+          <div class="flex items-start space-x-3">
+            <i class="fa-solid fa-triangle-exclamation text-amber-600 text-lg mt-0.5"></i>
+            <div>
+              <h4 class="text-sm font-bold text-amber-900">Application Currently Open</h4>
+              <p class="text-xs text-amber-800 mt-0.5 leading-relaxed">
+                You already have an open request (<span id="openReqSummary" class="font-bold">#101</span>). Per government allocation rules, you can only submit a new request after your existing request has been <strong>Fully Allocated</strong>.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div id="requestFormWrapper" class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
+          <h3 class="text-lg font-bold text-slate-900 mb-1">Government Resource Application</h3>
+          <p class="text-xs text-slate-500 mb-6">Apply for subsidized fertilizers or agricultural schemes. Priority is determined by the algorithmic Need Score.</p>
+
+          <form id="resourceForm" onsubmit="event.preventDefault(); submitResourceRequest();" class="space-y-5">
+            <!-- Crop confirmation -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Cultivated Crop</label>
+                <input type="text" id="reqCrop" readonly required
+                  class="w-full px-4 py-2.5 bg-slate-100 border border-slate-200 rounded-xl text-sm font-bold text-slate-800 outline-none">
+              </div>
+              <div>
+                <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Land Area (Acres)</label>
+                <input type="number" id="reqArea" min="0.1" max="100" step="0.1" value="2.0" required oninput="calculateLiveScore()"
+                  class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-800 focus:ring-2 focus:ring-agri-500 outline-none">
+              </div>
+            </div>
+
+            <!-- Resource Type & Detail -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Resource Category</label>
+                <select id="reqResource" onchange="handleResourceCategoryChange(); calculateLiveScore();" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-800 focus:ring-2 focus:ring-agri-500 outline-none">
+                  <option value="0">Fertilizer</option>
+                  <option value="1">Government Subsidy Scheme</option>
+                </select>
+              </div>
+              <div>
+                <label id="reqDetailLabel" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Fertilizer Type</label>
+                <select id="reqDetail" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-800 focus:ring-2 focus:ring-agri-500 outline-none">
+                  <!-- Injected via JS -->
+                </select>
+              </div>
+            </div>
+
+            <!-- Condition & Quantity -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Farm Distress Condition</label>
+                <select id="reqCondition" onchange="calculateLiveScore()" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-800 focus:ring-2 focus:ring-agri-500 outline-none">
+                  <option value="1">Normal (Standard conditions)</option>
+                  <option value="2">Pest or disease affected (Priority assistance)</option>
+                  <option value="3">Drought or flood affected (Maximum emergency assistance)</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                  Quantity Required (<span id="reqUnitLabel">kg</span>)
+                </label>
+                <input type="number" id="reqQuantity" min="1" max="100000" value="100" required
+                  class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-800 focus:ring-2 focus:ring-agri-500 outline-none">
+              </div>
+            </div>
+
+            <!-- Live Need Score Preview Box -->
+            <div class="p-4 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between">
+              <div>
+                <div class="text-xs font-bold text-slate-500 uppercase tracking-wider">Dynamic Need Score Priority</div>
+                <div class="text-xs text-slate-400 mt-0.5">Calculated by formula: Distress Condition Points + Smallholder Land Points</div>
+              </div>
+              <div class="text-right">
+                <span id="liveNeedScore" class="inline-flex items-center px-4 py-1.5 rounded-lg bg-agri-100 text-agri-800 font-extrabold text-lg">
+                  30 Points
+                </span>
+              </div>
+            </div>
+
+            <button type="submit" class="w-full py-3.5 bg-agri-600 hover:bg-agri-700 text-white rounded-xl font-bold text-sm shadow-md shadow-agri-600/30 transition">
+              🚀 Submit Formal Resource Request
+            </button>
+          </form>
+        </div>
+      </div>
+
+      <!-- Tab 3: My Requests & History -->
+      <div id="farmerTabContent3" class="hidden space-y-4">
+        <div class="flex items-center justify-between mb-2">
+          <h3 class="text-lg font-bold text-slate-900">Application History</h3>
+          <span class="text-xs text-slate-400">Real-time status synced with Officer Desk</span>
+        </div>
+        <div id="farmerRequestsList" class="space-y-3">
+          <!-- Dynamically Injected -->
+        </div>
+      </div>
+    </div>
+
+    <!-- 3. OFFICER / ADMIN DESK (Opened ONLY after Officer Login) -->
+    <div id="officerPortal" class="hidden space-y-6">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h2 class="text-2xl font-extrabold text-slate-900">🏛️ Agriculture Officer Dispatch Desk</h2>
+          <p class="text-xs text-slate-500">Resource Allocation Queue ranked by Algorithmic Need Score (Heap Priority Queue)</p>
+        </div>
+        <div class="flex items-center space-x-2">
+          <button onclick="renderOfficerDesk()" class="text-xs font-bold px-3 py-2 bg-white border border-slate-200 hover:bg-slate-50 rounded-xl text-slate-700 shadow-sm transition">
+            <i class="fa-solid fa-arrows-rotate mr-1"></i> Refresh Queue
+          </button>
+        </div>
+      </div>
+
+      <!-- Officer Metrics -->
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm text-center">
+          <span class="text-xs font-bold text-slate-400 uppercase tracking-wider block">Total Applications</span>
+          <span id="metricTotalReqs" class="text-2xl font-extrabold text-slate-900 block mt-1">0</span>
+        </div>
+        <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm text-center">
+          <span class="text-xs font-bold text-amber-500 uppercase tracking-wider block">Pending Review</span>
+          <span id="metricPending" class="text-2xl font-extrabold text-amber-600 block mt-1">0</span>
+        </div>
+        <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm text-center">
+          <span class="text-xs font-bold text-blue-500 uppercase tracking-wider block">Partially Allocated</span>
+          <span id="metricPartial" class="text-2xl font-extrabold text-blue-600 block mt-1">0</span>
+        </div>
+        <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm text-center">
+          <span class="text-xs font-bold text-agri-600 uppercase tracking-wider block">Fully Disbursed</span>
+          <span id="metricAllocated" class="text-2xl font-extrabold text-agri-600 block mt-1">0</span>
+        </div>
+      </div>
+
+      <!-- Queue Filter & Priority List -->
+      <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+        <div class="p-5 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div class="flex items-center space-x-2">
+            <span class="text-sm font-bold text-slate-900">Priority Dispatch Queue</span>
+            <span class="text-xs bg-agri-100 text-agri-800 px-2 py-0.5 rounded-full font-bold">Highest Urgency First</span>
+          </div>
+          <div class="flex items-center space-x-2 text-xs">
+            <select id="officerStatusFilter" onchange="renderOfficerDesk()" class="px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-slate-700 font-semibold outline-none">
+              <option value="open">Active (Pending & Partial)</option>
+              <option value="all">All Applications</option>
+              <option value="Allocated">Allocated Only</option>
+            </select>
+            <select id="officerResourceFilter" onchange="renderOfficerDesk()" class="px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-slate-700 font-semibold outline-none">
+              <option value="all">All Resources</option>
+              <option value="0">Fertilizer Only</option>
+              <option value="1">Subsidy Only</option>
+            </select>
+          </div>
+        </div>
+
+        <div id="officerQueueList" class="divide-y divide-slate-100">
+          <!-- Dynamically Injected Queue Items -->
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- ================= FOOTER ================= -->
+  <footer class="border-t border-slate-200 bg-white py-4 mt-8">
+    <div class="max-w-7xl mx-auto px-4 text-center text-xs text-slate-400">
+      AgriAlloc &bull; Algorithmic Crop & Resource Allocation Portal &bull; Ready for GitHub Pages
+    </div>
+  </footer>
+
+  <!-- ================= JAVASCRIPT ENGINE ================= -->
+  <script>
+    /* --- CONSTANTS & SYSTEM CONFIG (Recreated exactly from Python) --- */
+    const SOILS = ["Alluvial", "Black", "Red", "Sandy"];
+    const SEASONS = ["Kharif", "Rabi", "Zaid"];
+    const CONDITIONS = ["Normal", "Pest or disease affected", "Drought or flood affected"];
+    const RESOURCES = ["Fertilizer", "Subsidy"];
+    const FERTILIZERS = ["Urea", "DAP", "Potash"];
+    const SCHEMES = ["Seed", "Equipment", "Irrigation"];
+    const UNITS = ["kg", "units"];
+
+    const CROPS = {
+      "Alluvial_Kharif": { crop: "Rice", icon: "🌾", tip: "High water requirement. Ideal for clayey alluvial soil." },
+      "Alluvial_Rabi": { crop: "Wheat", icon: "🌾", tip: "Cool growing season with bright sunshine during harvest." },
+      "Alluvial_Zaid": { crop: "Watermelon", icon: "🍉", tip: "Quick maturing summer crop with high market value." },
+      "Black_Kharif": { crop: "Cotton", icon: "🌱", tip: "Thrives in deep, moisture-retentive black basaltic soil." },
+      "Black_Rabi": { crop: "Chickpea", icon: "🧆", tip: "Nitrogen-fixing legume, excellent for soil health." },
+      "Black_Zaid": { crop: "Sunflower", icon: "🌻", tip: "Drought-hardy oilseed, great for spring/summer rotation." },
+      "Red_Kharif": { crop: "Groundnut", icon: "🥜", tip: "Well-drained red soil aids peg penetration & pod growth." },
+      "Red_Rabi": { crop: "Lentil", icon: "🍲", tip: "Requires moderate temperature and light watering." },
+      "Red_Zaid": { crop: "Moong", icon: "🌿", tip: "Short duration 60-day pulse with soil-enriching nodules." },
+      "Sandy_Kharif": { crop: "Pearl Millet", icon: "🌾", tip: "Highly drought-resistant, thrives in arid sandy tracts." },
+      "Sandy_Rabi": { crop: "Mustard", icon: "🌼", tip: "Low moisture requirement, high oil content seed." },
+      "Sandy_Zaid": { crop: "Muskmelon", icon: "🍈", tip: "Sandy loam enables sweet fruit development with sunny days." }
+    };
+
+    /* --- DATA STORAGE ENGINE (localStorage persistence) --- */
+    function getFarmers() {
+      return JSON.parse(localStorage.getItem("agri_farmers") || "[]");
+    }
+    function saveFarmers(farmers) {
+      localStorage.setItem("agri_farmers", JSON.stringify(farmers));
+    }
+    function getRequests() {
+      return JSON.parse(localStorage.getItem("agri_requests") || "[]");
+    }
+    function saveRequests(requests) {
+      localStorage.setItem("agri_requests", JSON.stringify(requests));
+    }
+
+    // Need Score calculation matching python code exactly
+    function computeNeedScore(area, condition, resourceIndex) {
+      let condPoints, landPoints;
+      if (resourceIndex === 0) {
+        condPoints = [0, 10, 30, 40];
+        landPoints = [20, 15, 10];
+      } else {
+        condPoints = [0, 10, 35, 50];
+        landPoints = [25, 20, 15];
+      }
+      let landScore = (area <= 2) ? landPoints[0] : (area <= 5 ? landPoints[1] : landPoints[2]);
+      return condPoints[condition] + landScore;
+    }
+
+    // Initial Database Seeder
+    function ensureInitialData() {
+      if (getFarmers().length === 0) {
+        const seedFarmers = [
+          { farmer_id: 1001, name: "Ramesh Kumar", contact: "9876543210", village: "Rampur" },
+          { farmer_id: 1002, name: "Sunita Devi", contact: "9812345678", village: "Kalyanpur" },
+          { farmer_id: 1003, name: "Baldev Singh", contact: "9765432109", village: "Fatehgarh" }
+        ];
+        const seedRequests = [
+          { request_id: 1, farmer_id: 1001, resource: 0, crop: "Wheat", area: 1.8, condition: 3, quantity: 200, detail: "Urea", allocated: 0, status: "Pending", need_score: 60 },
+          { request_id: 2, farmer_id: 1002, resource: 1, crop: "Mustard", area: 3.5, condition: 2, quantity: 2, detail: "Irrigation", allocated: 1, status: "Partially Allocated", need_score: 55 },
+          { request_id: 3, farmer_id: 1003, resource: 0, crop: "Cotton", area: 6.0, condition: 1, quantity: 400, detail: "DAP", allocated: 400, status: "Allocated", need_score: 20 }
+        ];
+        saveFarmers(seedFarmers);
+        saveRequests(seedRequests);
+      }
+    }
+
+    function resetAllDemoData() {
+      localStorage.removeItem("agri_farmers");
+      localStorage.removeItem("agri_requests");
+      ensureInitialData();
+      alert("Database reset to demo state!");
+      location.reload();
+    }
+
+    /* --- AUTHENTICATION & SESSION MANAGEMENT --- */
+    let currentUser = null; // { role: 'farmer'|'officer', data: {...} }
+
+    function switchAuthTab(tab) {
+      document.getElementById("formFarmerLogin").classList.add("hidden");
+      document.getElementById("formFarmerReg").classList.add("hidden");
+      document.getElementById("formOfficerLogin").classList.add("hidden");
+      document.getElementById("tabBtnFarmerLogin").className = "py-2 rounded-lg text-slate-500 hover:text-slate-900 transition";
+      document.getElementById("tabBtnFarmerReg").className = "py-2 rounded-lg text-slate-500 hover:text-slate-900 transition";
+      document.getElementById("tabBtnOfficer").className = "py-2 rounded-lg text-slate-500 hover:text-slate-900 transition";
+      document.getElementById("authAlert").classList.add("hidden");
+
+      if (tab === 'farmer-login') {
+        document.getElementById("formFarmerLogin").classList.remove("hidden");
+        document.getElementById("tabBtnFarmerLogin").className = "py-2 rounded-lg text-slate-900 bg-white shadow-sm transition font-bold";
+      } else if (tab === 'farmer-reg') {
+        document.getElementById("formFarmerReg").classList.remove("hidden");
+        document.getElementById("tabBtnFarmerReg").className = "py-2 rounded-lg text-slate-900 bg-white shadow-sm transition font-bold";
+      } else if (tab === 'officer-login') {
+        document.getElementById("formOfficerLogin").classList.remove("hidden");
+        document.getElementById("tabBtnOfficer").className = "py-2 rounded-lg text-slate-900 bg-white shadow-sm transition font-bold";
+      }
+    }
+
+    function showAuthAlert(msg, type = "error") {
+      const el = document.getElementById("authAlert");
+      el.className = type === "error" 
+        ? "mt-4 p-3 rounded-xl text-xs font-semibold bg-rose-50 border border-rose-200 text-rose-700 block"
+        : "mt-4 p-3 rounded-xl text-xs font-semibold bg-emerald-50 border border-emerald-200 text-emerald-700 block";
+      el.innerHTML = msg;
+    }
+
+    function submitFarmerLogin() {
+      const fid = parseInt(document.getElementById("loginFarmerId").value);
+      const contact = document.getElementById("loginContact").value.trim();
+      const farmers = getFarmers();
+      const farmer = farmers.find(f => f.farmer_id === fid && f.contact === contact);
+      if (farmer) {
+        loginSuccess('farmer', farmer);
+      } else {
+        showAuthAlert("Invalid Farmer ID or Mobile Number. Please check or register.");
+      }
+    }
+
+    function submitFarmerRegister() {
+      const name = document.getElementById("regName").value.trim();
+      const contact = document.getElementById("regContact").value.trim();
+      const village = document.getElementById("regVillage").value.trim();
+
+      if (!name || !village) return showAuthAlert("All fields are required.");
+      if (contact.length !== 10 || !/^\d+$/.test(contact)) return showAuthAlert("Enter a valid 10-digit mobile number.");
+
+      const farmers = getFarmers();
+      if (farmers.some(f => f.contact === contact)) {
+        return showAuthAlert("This contact number is already registered! Please login.");
+      }
+
+      const nextId = farmers.reduce((max, f) => Math.max(max, f.farmer_id), 1000) + 1;
+      const newFarmer = { farmer_id: nextId, name, contact, village };
+      farmers.push(newFarmer);
+      saveFarmers(farmers);
+
+      alert(`Registration Successful! Your Farmer ID is #${nextId}. Remember this ID for future logins.`);
+      loginSuccess('farmer', newFarmer);
+    }
+
+    function submitOfficerLogin() {
+      const pass = document.getElementById("officerPass").value;
+      if (pass === "admin" || pass === "1234") {
+        loginSuccess('officer', { name: "District Nodal Officer", role: "admin" });
+      } else {
+        showAuthAlert("Incorrect Officer Passcode. (Hint: Use 'admin')");
+      }
+    }
+
+    function quickLoginFarmer(id, contact) {
+      const farmer = getFarmers().find(f => f.farmer_id === id);
+      if (farmer) loginSuccess('farmer', farmer);
+    }
+
+    function quickLoginOfficer() {
+      loginSuccess('officer', { name: "District Nodal Officer", role: "admin" });
+    }
+
+    function loginSuccess(role, data) {
+      currentUser = { role, data };
+      localStorage.setItem("agri_current_session", JSON.stringify(currentUser));
+
+      // UI View Transitions
+      document.getElementById("authScreen").classList.add("hidden");
+      document.getElementById("topNavBar").classList.remove("hidden");
+
+      if (role === 'farmer') {
+        document.getElementById("navUserName").textContent = `${data.name} (#${data.farmer_id})`;
+        document.getElementById("officerPortal").classList.add("hidden");
+        document.getElementById("farmerPortal").classList.remove("hidden");
+        setupFarmerPortal();
+      } else {
+        document.getElementById("navUserName").textContent = `Officer Desk`;
+        document.getElementById("farmerPortal").classList.add("hidden");
+        document.getElementById("officerPortal").classList.remove("hidden");
+        renderOfficerDesk();
+      }
+    }
+
+    function handleLogout() {
+      currentUser = null;
+      localStorage.removeItem("agri_current_session");
+      document.getElementById("topNavBar").classList.add("hidden");
+      document.getElementById("farmerPortal").classList.add("hidden");
+      document.getElementById("officerPortal").classList.add("hidden");
+      document.getElementById("authScreen").classList.remove("hidden");
+      switchAuthTab('farmer-login');
+    }
+
+    /* --- FARMER PORTAL LOGIC --- */
+    function setupFarmerPortal() {
+      const farmer = currentUser.data;
+      document.getElementById("bannerFarmerName").textContent = farmer.name;
+      document.getElementById("bannerFarmerId").textContent = `#${farmer.farmer_id}`;
+      document.getElementById("bannerVillage").textContent = farmer.village;
+      document.getElementById("bannerContact").textContent = farmer.contact;
+
+      updateCropRecommendation();
+      handleResourceCategoryChange();
+      checkActiveRequest();
+      renderFarmerRequests();
+      switchFarmerTab(1);
+    }
+
+    function switchFarmerTab(tabNum) {
+      document.getElementById("farmerTabContent1").classList.add("hidden");
+      document.getElementById("farmerTabContent2").classList.add("hidden");
+      document.getElementById("farmerTabContent3").classList.add("hidden");
+
+      const tabs = [document.getElementById("fTabBtn1"), document.getElementById("fTabBtn2"), document.getElementById("fTabBtn3")];
+      tabs.forEach((t, i) => {
+        if (i === tabNum - 1) {
+          t.className = "pb-3 border-b-2 border-agri-600 text-agri-700 flex items-center space-x-2 font-bold";
+        } else {
+          t.className = "pb-3 border-b-2 border-transparent text-slate-500 hover:text-slate-800 flex items-center space-x-2";
+        }
+      });
+
+      document.getElementById(`farmerTabContent${tabNum}`).classList.remove("hidden");
+      if (tabNum === 2) {
+        checkActiveRequest();
+        calculateLiveScore();
+      }
+      if (tabNum === 3) {
+        renderFarmerRequests();
+      }
+    }
+
+    function updateCropRecommendation() {
+      const soil = document.getElementById("recSoil").value;
+      const season = document.getElementById("recSeason").value;
+      const info = CROPS[`${soil}_${season}`];
+
+      document.getElementById("recCropIcon").textContent = info.icon;
+      document.getElementById("recCropName").textContent = info.crop;
+      document.getElementById("recCropAdvice").textContent = info.tip;
+      document.getElementById("reqCrop").value = info.crop;
+    }
+
+    function selectRecommendedCropForRequest() {
+      const crop = document.getElementById("recCropName").textContent;
+      document.getElementById("reqCrop").value = crop;
+      switchFarmerTab(2);
+    }
+
+    function handleResourceCategoryChange() {
+      const resVal = parseInt(document.getElementById("reqResource").value);
+      const detailSelect = document.getElementById("reqDetail");
+      const unitLabel = document.getElementById("reqUnitLabel");
+      const detailLabel = document.getElementById("reqDetailLabel");
+
+      detailSelect.innerHTML = "";
+      if (resVal === 0) {
+        detailLabel.textContent = "Fertilizer Type";
+        unitLabel.textContent = "kg";
+        FERTILIZERS.forEach(f => {
+          const opt = document.createElement("option");
+          opt.value = f;
+          opt.textContent = f;
+          detailSelect.appendChild(opt);
+        });
+        document.getElementById("reqQuantity").value = 100;
+      } else {
+        detailLabel.textContent = "Subsidy Scheme";
+        unitLabel.textContent = "units";
+        SCHEMES.forEach(s => {
+          const opt = document.createElement("option");
+          opt.value = s;
+          opt.textContent = s;
+          detailSelect.appendChild(opt);
+        });
+        document.getElementById("reqQuantity").value = 2;
+      }
+    }
+
+    function calculateLiveScore() {
+      const area = parseFloat(document.getElementById("reqArea").value) || 0;
+      const condition = parseInt(document.getElementById("reqCondition").value);
+      const resource = parseInt(document.getElementById("reqResource").value);
+      const score = computeNeedScore(area, condition, resource);
+      document.getElementById("liveNeedScore").textContent = `${score} Points`;
+      return score;
+    }
+
+    function checkActiveRequest() {
+      const requests = getRequests();
+      const openReq = requests.find(r => r.farmer_id === currentUser.data.farmer_id && (r.status === "Pending" || r.status === "Partially Allocated"));
+
+      const notice = document.getElementById("activeRequestNotice");
+      const formWrapper = document.getElementById("requestFormWrapper");
+      const bannerCount = document.getElementById("bannerOpenReqCount");
+
+      if (openReq) {
+        notice.classList.remove("hidden");
+        formWrapper.classList.add("hidden");
+        document.getElementById("openReqSummary").textContent = `Request #${openReq.request_id} for ${openReq.crop} (${openReq.status})`;
+        bannerCount.textContent = "1";
+      } else {
+        notice.classList.add("hidden");
+        formWrapper.classList.remove("hidden");
+        bannerCount.textContent = "0";
+      }
+    }
+
+    function submitResourceRequest() {
+      const area = parseFloat(document.getElementById("reqArea").value);
+      const crop = document.getElementById("reqCrop").value;
+      const resource = parseInt(document.getElementById("reqResource").value);
+      const detail = document.getElementById("reqDetail").value;
+      const condition = parseInt(document.getElementById("reqCondition").value);
+      const quantity = parseInt(document.getElementById("reqQuantity").value);
+
+      if (!area || area <= 0) return alert("Please enter valid land area.");
+      if (!quantity || quantity <= 0) return alert("Please enter valid quantity.");
+
+      const requests = getRequests();
+      // Check duplicate
+      if (requests.some(r => r.farmer_id === currentUser.data.farmer_id && (r.status === "Pending" || r.status === "Partially Allocated"))) {
+        return alert("You already have an open request. Please wait until it is fully allocated.");
+      }
+
+      const nextId = requests.reduce((max, r) => Math.max(max, r.request_id), 0) + 1;
+      const needScore = computeNeedScore(area, condition, resource);
+
+      const newRequest = {
+        request_id: nextId,
+        farmer_id: currentUser.data.farmer_id,
+        resource,
+        crop,
+        area,
+        condition,
+        quantity,
+        detail,
+        allocated: 0,
+        status: "Pending",
+        need_score: needScore,
+        created_at: new Date().toLocaleDateString()
+      };
+
+      requests.push(newRequest);
+      saveRequests(requests);
+
+      alert(`Application #${nextId} successfully submitted!\nYour Priority Need Score is: ${needScore}.\nThe Officer Allocation Desk will prioritize your request.`);
+      switchFarmerTab(3);
+    }
+
+    function renderFarmerRequests() {
+      const requests = getRequests().filter(r => r.farmer_id === currentUser.data.farmer_id);
+      const listEl = document.getElementById("farmerRequestsList");
+      listEl.innerHTML = "";
+
+      if (requests.length === 0) {
+        listEl.innerHTML = `
+          <div class="bg-white rounded-2xl border border-slate-200 p-8 text-center text-slate-400">
+            <i class="fa-solid fa-folder-open text-3xl mb-2 text-slate-300"></i>
+            <p class="text-sm">No applications submitted yet. Switch to Tab 2 to apply.</p>
+          </div>
+        `;
+        return;
+      }
+
+      // Sort newest first
+      requests.reverse().forEach(r => {
+        const unit = UNITS[r.resource];
+        const resName = RESOURCES[r.resource];
+        const condName = CONDITIONS[r.condition - 1];
+        const pct = r.quantity > 0 ? Math.min(100, Math.round((r.allocated / r.quantity) * 100)) : 0;
+
+        let badgeClass = "bg-amber-50 text-amber-700 border-amber-200";
+        if (r.status === "Allocated") badgeClass = "bg-emerald-50 text-emerald-700 border-emerald-200";
+        if (r.status === "Partially Allocated") badgeClass = "bg-blue-50 text-blue-700 border-blue-200";
+
+        const card = document.createElement("div");
+        card.className = "bg-white rounded-2xl border border-slate-200 p-5 shadow-sm space-y-3";
+        card.innerHTML = `
+          <div class="flex items-center justify-between">
+            <div>
+              <span class="text-xs font-bold text-slate-400">Application #${r.request_id}</span>
+              <h4 class="text-base font-extrabold text-slate-900">${r.crop} &bull; ${resName} (${r.detail})</h4>
+            </div>
+            <span class="text-xs font-bold px-3 py-1 rounded-full border ${badgeClass}">
+              ${r.status}
+            </span>
+          </div>
+
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs text-slate-600 bg-slate-50 p-3 rounded-xl">
+            <div><span class="text-slate-400 block">Land Area:</span> <strong>${r.area} acres</strong></div>
+            <div><span class="text-slate-400 block">Condition:</span> <strong>${condName}</strong></div>
+            <div><span class="text-slate-400 block">Priority Score:</span> <strong class="text-agri-700">${r.need_score} pts</strong></div>
+            <div><span class="text-slate-400 block">Remaining:</span> <strong class="text-slate-800">${r.quantity - r.allocated} ${unit}</strong></div>
+          </div>
+
+          <div>
+            <div class="flex justify-between text-xs font-semibold mb-1">
+              <span class="text-slate-600">Disbursed: ${r.allocated} / ${r.quantity} ${unit}</span>
+              <span class="text-agri-700">${pct}%</span>
+            </div>
+            <div class="w-full bg-slate-100 rounded-full h-2.5 overflow-hidden">
+              <div class="bg-agri-600 h-2.5 rounded-full transition-all duration-500" style="width: ${pct}%"></div>
+            </div>
+          </div>
+        `;
+        listEl.appendChild(card);
+      });
+    }
+
+    /* --- OFFICER ALLOCATION DESK LOGIC --- */
+    function renderOfficerDesk() {
+      const requests = getRequests();
+      const farmers = getFarmers();
+
+      // Merge farmer info
+      const merged = requests.map(r => {
+        const farmer = farmers.find(f => f.farmer_id === r.farmer_id) || { name: "Unknown", village: "N/A", contact: "N/A" };
+        return { ...r, farmerName: farmer.name, village: farmer.village, contact: farmer.contact };
+      });
+
+      // Update KPI counters
+      document.getElementById("metricTotalReqs").textContent = merged.length;
+      document.getElementById("metricPending").textContent = merged.filter(r => r.status === "Pending").length;
+      document.getElementById("metricPartial").textContent = merged.filter(r => r.status === "Partially Allocated").length;
+      document.getElementById("metricAllocated").textContent = merged.filter(r => r.status === "Allocated").length;
+
+      // Filter
+      const statusFilter = document.getElementById("officerStatusFilter").value;
+      const resFilter = document.getElementById("officerResourceFilter").value;
+
+      let filtered = merged.filter(r => {
+        if (statusFilter === 'open' && r.status === 'Allocated') return false;
+        if (statusFilter === 'Allocated' && r.status !== 'Allocated') return false;
+        if (resFilter !== 'all' && r.resource !== parseInt(resFilter)) return false;
+        return true;
+      });
+
+      // Priority Queue Sorting: Open requests sorted by need_score descending!
+      filtered.sort((a, b) => {
+        if (a.status === 'Allocated' && b.status !== 'Allocated') return 1;
+        if (a.status !== 'Allocated' && b.status === 'Allocated') return -1;
+        return b.need_score - a.need_score;
+      });
+
+      const listEl = document.getElementById("officerQueueList");
+      listEl.innerHTML = "";
+
+      if (filtered.length === 0) {
+        listEl.innerHTML = `
+          <div class="p-8 text-center text-slate-400">
+            <i class="fa-solid fa-check-circle text-3xl mb-2 text-agri-400"></i>
+            <p class="text-sm">No requests matching this filter criteria.</p>
+          </div>
+        `;
+        return;
+      }
+
+      filtered.forEach(r => {
+        const unit = UNITS[r.resource];
+        const resName = RESOURCES[r.resource];
+        const remaining = r.quantity - r.allocated;
+
+        let badgeClass = "bg-amber-50 text-amber-700 border-amber-200";
+        if (r.status === "Allocated") badgeClass = "bg-emerald-50 text-emerald-700 border-emerald-200";
+        if (r.status === "Partially Allocated") badgeClass = "bg-blue-50 text-blue-700 border-blue-200";
+
+        const row = document.createElement("div");
+        row.className = "p-5 hover:bg-slate-50/70 transition flex flex-col md:flex-row md:items-center justify-between gap-4";
+        row.innerHTML = `
+          <div class="space-y-1">
+            <div class="flex items-center space-x-2">
+              <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-extrabold bg-agri-100 text-agri-800">
+                ⭐ Priority Score: ${r.need_score}
+              </span>
+              <span class="text-xs text-slate-400">#${r.request_id}</span>
+              <span class="text-xs font-bold px-2 py-0.5 rounded-full border ${badgeClass}">${r.status}</span>
+            </div>
+            <h4 class="text-base font-extrabold text-slate-900">${r.farmerName} <span class="font-normal text-xs text-slate-500">(#${r.farmer_id} &bull; ${r.village} &bull; ${r.contact})</span></h4>
+            <p class="text-xs text-slate-600">
+              Crop: <strong>${r.crop}</strong> &bull; Resource: <strong>${resName} - ${r.detail}</strong> &bull; Area: <strong>${r.area} acres</strong> &bull; Distress: <strong>${CONDITIONS[r.condition - 1]}</strong>
+            </p>
+            <p class="text-xs font-semibold text-slate-700">
+              Required: <strong>${r.quantity} ${unit}</strong> &bull; Allocated: <strong class="text-agri-700">${r.allocated} ${unit}</strong> &bull; Remaining: <strong class="text-rose-600">${remaining} ${unit}</strong>
+            </p>
+          </div>
+
+          <div class="flex items-center space-x-2">
+            ${remaining > 0 ? `
+              <div class="flex items-center space-x-2">
+                <input type="number" id="allocInput_${r.request_id}" min="1" max="${remaining}" value="${remaining}" 
+                  class="w-24 px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-800 outline-none">
+                <button onclick="disburseResource(${r.request_id})" class="px-3.5 py-2 bg-agri-600 hover:bg-agri-700 text-white rounded-xl text-xs font-bold shadow-sm transition">
+                  Disburse
+                </button>
+                <button onclick="disburseFull(${r.request_id})" class="px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold shadow-sm transition">
+                  100% Full
+                </button>
+              </div>
+            ` : `
+              <span class="text-xs font-bold text-emerald-600 bg-emerald-50 px-3 py-1.5 rounded-lg border border-emerald-200">
+                <i class="fa-solid fa-circle-check mr-1"></i> Completed
+              </span>
+            `}
+          </div>
+        `;
+        listEl.appendChild(row);
+      });
+    }
+
+    function disburseResource(requestId) {
+      const inputEl = document.getElementById(`allocInput_${requestId}`);
+      const amount = parseInt(inputEl.value);
+      if (!amount || amount <= 0) return alert("Enter valid quantity.");
+
+      const requests = getRequests();
+      const req = requests.find(r => r.request_id === requestId);
+      if (!req) return;
+
+      const remaining = req.quantity - req.allocated;
+      if (amount > remaining) return alert(`Maximum allocatable is ${remaining}.`);
+
+      req.allocated += amount;
+      req.status = (req.allocated >= req.quantity) ? "Allocated" : "Partially Allocated";
+
+      saveRequests(requests);
+      renderOfficerDesk();
+    }
+
+    function disburseFull(requestId) {
+      const requests = getRequests();
+      const req = requests.find(r => r.request_id === requestId);
+      if (!req) return;
+
+      req.allocated = req.quantity;
+      req.status = "Allocated";
+
+      saveRequests(requests);
+      renderOfficerDesk();
+    }
+
+    /* --- INITIALIZATION --- */
+    window.addEventListener("DOMContentLoaded", () => {
+      ensureInitialData();
+      const savedSession = localStorage.getItem("agri_current_session");
+      if (savedSession) {
+        try {
+          const sess = JSON.parse(savedSession);
+          loginSuccess(sess.role, sess.data);
+        } catch (e) {
+          handleLogout();
+        }
+      } else {
+        handleLogout();
+      }
+    });
+  </script>
+</body>
+</html>
