@@ -84,10 +84,9 @@
 
       <div class="bg-white rounded-2xl border border-slate-200/80 shadow-xl shadow-slate-200/50 p-6 sm:p-8">
         <!-- Auth Tabs -->
-        <div class="grid grid-cols-3 gap-1 bg-slate-100 p-1 rounded-xl mb-6 text-xs font-semibold">
+        <div class="grid grid-cols-2 gap-1 bg-slate-100 p-1 rounded-xl mb-6 text-xs font-semibold">
           <button id="tabBtnFarmerLogin" onclick="switchAuthTab('farmer-login')" class="py-2 rounded-lg text-slate-900 bg-white shadow-sm transition">Farmer Login</button>
           <button id="tabBtnFarmerReg" onclick="switchAuthTab('farmer-reg')" class="py-2 rounded-lg text-slate-500 hover:text-slate-900 transition">Register</button>
-          <button id="tabBtnOfficer" onclick="switchAuthTab('officer-login')" class="py-2 rounded-lg text-slate-500 hover:text-slate-900 transition">Officer Desk</button>
         </div>
 
         <!-- FORM A: Farmer Login -->
@@ -140,21 +139,6 @@
           </button>
         </form>
 
-        <!-- FORM C: Officer Login -->
-        <form id="formOfficerLogin" onsubmit="event.preventDefault(); submitOfficerLogin();" class="hidden space-y-4">
-          <div class="bg-amber-50 border border-amber-200 rounded-xl p-3 text-xs text-amber-800">
-            <i class="fa-solid fa-shield-halved mr-1"></i> Authorized agricultural nodal officers only.
-          </div>
-          <div>
-            <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Officer Security Passcode</label>
-            <input type="password" id="officerPass" placeholder="Enter passcode (Hint: admin)" required
-              class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-agri-500 focus:bg-white outline-none transition">
-          </div>
-          <button type="submit" class="w-full py-3 bg-slate-900 hover:bg-slate-800 text-white rounded-xl font-bold text-sm shadow-md transition">
-            Enter Officer Allocation Desk
-          </button>
-        </form>
-
         <div id="authAlert" class="hidden mt-4 p-3 rounded-xl text-xs font-semibold"></div>
 
         <!-- Quick 1-Click Demo Buttons -->
@@ -168,9 +152,9 @@
               <span class="font-bold text-slate-800 block">Ramesh Kumar</span>
               <span class="text-slate-400">ID: #1001</span>
             </button>
-            <button onclick="quickLoginOfficer()" class="text-left p-2.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl transition text-xs">
-              <span class="font-bold text-slate-800 block">Officer Desk</span>
-              <span class="text-slate-400">Admin Pass</span>
+            <button onclick="quickLoginFarmer(1002, '9812345678')" class="text-left p-2.5 bg-slate-50 hover:bg-agri-50 border border-slate-200 hover:border-agri-300 rounded-xl transition text-xs">
+              <span class="font-bold text-slate-800 block">Sunita Devi</span>
+              <span class="text-slate-400">ID: #1002</span>
             </button>
           </div>
         </div>
@@ -357,67 +341,7 @@
       </div>
     </div>
 
-    <!-- 3. OFFICER / ADMIN DESK (Opened ONLY after Officer Login) -->
-    <div id="officerPortal" class="hidden space-y-6">
-      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h2 class="text-2xl font-extrabold text-slate-900">🏛️ Agriculture Officer Dispatch Desk</h2>
-          <p class="text-xs text-slate-500">Resource Allocation Queue ranked by Algorithmic Need Score (Heap Priority Queue)</p>
-        </div>
-        <div class="flex items-center space-x-2">
-          <button onclick="renderOfficerDesk()" class="text-xs font-bold px-3 py-2 bg-white border border-slate-200 hover:bg-slate-50 rounded-xl text-slate-700 shadow-sm transition">
-            <i class="fa-solid fa-arrows-rotate mr-1"></i> Refresh Queue
-          </button>
-        </div>
-      </div>
-
-      <!-- Officer Metrics -->
-      <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm text-center">
-          <span class="text-xs font-bold text-slate-400 uppercase tracking-wider block">Total Applications</span>
-          <span id="metricTotalReqs" class="text-2xl font-extrabold text-slate-900 block mt-1">0</span>
-        </div>
-        <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm text-center">
-          <span class="text-xs font-bold text-amber-500 uppercase tracking-wider block">Pending Review</span>
-          <span id="metricPending" class="text-2xl font-extrabold text-amber-600 block mt-1">0</span>
-        </div>
-        <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm text-center">
-          <span class="text-xs font-bold text-blue-500 uppercase tracking-wider block">Partially Allocated</span>
-          <span id="metricPartial" class="text-2xl font-extrabold text-blue-600 block mt-1">0</span>
-        </div>
-        <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm text-center">
-          <span class="text-xs font-bold text-agri-600 uppercase tracking-wider block">Fully Disbursed</span>
-          <span id="metricAllocated" class="text-2xl font-extrabold text-agri-600 block mt-1">0</span>
-        </div>
-      </div>
-
-      <!-- Queue Filter & Priority List -->
-      <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-        <div class="p-5 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div class="flex items-center space-x-2">
-            <span class="text-sm font-bold text-slate-900">Priority Dispatch Queue</span>
-            <span class="text-xs bg-agri-100 text-agri-800 px-2 py-0.5 rounded-full font-bold">Highest Urgency First</span>
-          </div>
-          <div class="flex items-center space-x-2 text-xs">
-            <select id="officerStatusFilter" onchange="renderOfficerDesk()" class="px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-slate-700 font-semibold outline-none">
-              <option value="open">Active (Pending & Partial)</option>
-              <option value="all">All Applications</option>
-              <option value="Allocated">Allocated Only</option>
-            </select>
-            <select id="officerResourceFilter" onchange="renderOfficerDesk()" class="px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-slate-700 font-semibold outline-none">
-              <option value="all">All Resources</option>
-              <option value="0">Fertilizer Only</option>
-              <option value="1">Subsidy Only</option>
-            </select>
-          </div>
-        </div>
-
-        <div id="officerQueueList" class="divide-y divide-slate-100">
-          <!-- Dynamically Injected Queue Items -->
-        </div>
-      </div>
-    </div>
-
+    <!-- End Farmer Portal -->
   </main>
 
   <!-- ================= FOOTER ================= -->
@@ -573,43 +497,21 @@
       loginSuccess('farmer', newFarmer);
     }
 
-    function submitOfficerLogin() {
-      const pass = document.getElementById("officerPass").value;
-      if (pass === "admin" || pass === "1234") {
-        loginSuccess('officer', { name: "District Nodal Officer", role: "admin" });
-      } else {
-        showAuthAlert("Incorrect Officer Passcode. (Hint: Use 'admin')");
-      }
-    }
-
     function quickLoginFarmer(id, contact) {
       const farmer = getFarmers().find(f => f.farmer_id === id);
       if (farmer) loginSuccess('farmer', farmer);
     }
 
-    function quickLoginOfficer() {
-      loginSuccess('officer', { name: "District Nodal Officer", role: "admin" });
-    }
-
     function loginSuccess(role, data) {
-      currentUser = { role, data };
+      currentUser = { role: 'farmer', data };
       localStorage.setItem("agri_current_session", JSON.stringify(currentUser));
 
       // UI View Transitions
       document.getElementById("authScreen").classList.add("hidden");
       document.getElementById("topNavBar").classList.remove("hidden");
-
-      if (role === 'farmer') {
-        document.getElementById("navUserName").textContent = `${data.name} (#${data.farmer_id})`;
-        document.getElementById("officerPortal").classList.add("hidden");
-        document.getElementById("farmerPortal").classList.remove("hidden");
-        setupFarmerPortal();
-      } else {
-        document.getElementById("navUserName").textContent = `Officer Desk`;
-        document.getElementById("farmerPortal").classList.add("hidden");
-        document.getElementById("officerPortal").classList.remove("hidden");
-        renderOfficerDesk();
-      }
+      document.getElementById("navUserName").textContent = `${data.name} (#${data.farmer_id})`;
+      document.getElementById("farmerPortal").classList.remove("hidden");
+      setupFarmerPortal();
     }
 
     function handleLogout() {
@@ -617,7 +519,6 @@
       localStorage.removeItem("agri_current_session");
       document.getElementById("topNavBar").classList.add("hidden");
       document.getElementById("farmerPortal").classList.add("hidden");
-      document.getElementById("officerPortal").classList.add("hidden");
       document.getElementById("authScreen").classList.remove("hidden");
       switchAuthTab('farmer-login');
     }
